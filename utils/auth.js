@@ -13,7 +13,12 @@ if (!token) {
  * 2.1 在 utils/request.js 设置请求拦截器，统一携带 token
  * 2.2 请求个人信息并设置到页面
  */
-
+axios({
+  url: '/v1_0/user/profile',
+}).then((result) => {
+  const username = result.data.name
+  document.querySelector('.nick-name').innerHTML = username
+})
 /**
  * 目标3：退出登录
  *  3.1 绑定点击事件
