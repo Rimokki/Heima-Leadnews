@@ -3,7 +3,14 @@
  *  1.1 获取频道列表数据
  *  1.2 展示到下拉菜单中
  */
-
+async function setChannelList() {
+  const channelList = await axios({ url: '/v1_0/channels' })
+  const htmlStr =
+    '<option value="" selected>请选择文章频道</option>' +
+    channelList.data.channels.map((item) => `<option value="${item.id}">${item.name}</option>`).join('')
+  document.querySelector('.form-select').innerHTML = htmlStr
+}
+setChannelList()
 /**
  * 目标2：文章封面设置
  *  2.1 准备标签结构和样式
@@ -11,7 +18,26 @@
  *  2.3 单独上传图片并得到图片 URL 网址
  *  2.4 回显并切换 img 标签展示（隐藏 + 号上传标签）
  */
+document.querySelector('.img-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    const fd = new FormData()
+    fd.append('image', file)
+    const res = await axios({
+      url: '/v1_0/upload',
+      method: 'POST',
+      data: fd,
+    })
+    const imgURL = res.data.url
+    document.querySelector('.rounded').src = imgURL
+    document.querySelector('.rounded').classList.add('show')
+    document.querySelector('.place').classList.add('hide')
+  }
+})
 
+document.querySelector('.rounded').addEventListener('click', () => {
+  document.querySelector('.img-file').click()
+})
 /**
  * 目标3：发布文章保存
  *  3.1 基于 form-serialize 插件收集表单数据对象
@@ -19,7 +45,37 @@
  *  3.3 调用 Alert 警告框反馈结果给用户
  *  3.4 重置表单并跳转到列表页
  */
+document.querySelector('.send').addEventListener('click', async () => {
+  const form = document.querySelector('.art-form')
+  const data = serialize(form, { hash: true, empty: true })
+  delete data.id
+  data.cover = {
+    type: 1,
+    images: [document.querySelector('.rounded').src],
+  }
 
+  try {
+    const res = await axios({
+      url: '/v1_0/mp/articles',
+      method: 'POST',
+      data,
+    })
+    myAlert(true, '文章发布成功')
+
+    form.reset()
+    document.querySelector('.rounded').src = ''
+    document.querySelector('.rounded').classList.remove('show')
+    document.querySelector('.place').classList.remove('hide')
+    editor.setHtml('')
+
+    setTimeout(() => {
+      location.href = '../content/index.html'
+    }, 1500)
+  } catch (err) {
+    console.dir(err)
+    myAlert(false, err.response.data.message)
+  }
+})
 /**
  * 目标4：编辑-回显文章
  *  4.1 页面跳转传参（URL 查询参数方式）
